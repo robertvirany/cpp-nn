@@ -30,7 +30,7 @@ matrix matmul(const matrix &a, const matrix &b) {
   }
 
   return out;
-};
+}
 
 matrix add(const matrix &a, const matrix &b) {
   assert(a.rows == b.rows && a.cols == b.cols);
@@ -44,7 +44,7 @@ matrix add(const matrix &a, const matrix &b) {
   }
 
   return out;
-};
+}
 
 matrix transpose(const matrix &a) {
 
@@ -57,7 +57,7 @@ matrix transpose(const matrix &a) {
   }
 
   return out;
-};
+}
 
 matrix hadamard(const matrix &a, const matrix &b) {
   assert(a.rows == b.rows && a.cols == b.cols);
@@ -68,6 +68,28 @@ matrix hadamard(const matrix &a, const matrix &b) {
       out(row, col) = a(row, col) * b(row, col);
     }
   }
+
+  return out;
+}
+
+matrix scalar_mul(const matrix &a, float s) {
+
+  matrix out(a.rows, a.cols);
+  for (int row = 0; row < a.rows; ++row) {
+    for (int col = 0; col < a.cols; ++col) {
+      out(row, col) = s * a(row, col);
+    }
+  }
+
+  return out;
+}
+
+matrix mat_sub(const matrix &a, const matrix &b) {
+  assert(a.rows == b.rows && a.cols == b.cols);
+
+  matrix minus_b = scalar_mul(b, -1);
+
+  matrix out = add(a, minus_b);
 
   return out;
 }
@@ -131,8 +153,6 @@ int main() {
     }
     std::cout << "\n";
   }
-
-
 
   return 0;
 }
