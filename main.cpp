@@ -32,7 +32,7 @@ matrix matmul(const matrix &a, const matrix &b) {
   return out;
 }
 
-matrix add(const matrix &a, const matrix &b) {
+matrix matadd(const matrix &a, const matrix &b) {
   assert(a.rows == b.rows && a.cols == b.cols);
 
   matrix out(a.rows, a.cols);
@@ -89,9 +89,55 @@ matrix mat_sub(const matrix &a, const matrix &b) {
 
   matrix minus_b = scalar_mul(b, -1);
 
-  matrix out = add(a, minus_b);
+  matrix out = matadd(a, minus_b);
 
   return out;
+}
+
+matrix affine(const matrix &X, const matrix &W, const matrix &b) {
+  matrix out = matmul(X, W);
+  out = matadd(out, b);
+
+  return out;
+}
+
+float mean_squared_error(const matrix &Y, const matrix &Y_hat) {
+  assert(Y.rows == Y_hat.rows && Y.cols == Y_hat.cols);
+  int n = Y.rows;
+  int d = Y.cols;
+
+  float mse = 0.0f;
+  for (int row = 0; row < Y.rows; ++row) {
+    for (int col = 0; col < Y.cols; ++col) {
+      float diff = Y(row, col) - Y_hat(row, col);
+
+      mse += diff * diff;
+    }
+  }
+
+  mse /= static_cast<float>(n * d);
+
+  return mse;
+}
+
+matrix mse_grad(const matrix &Y, const matrix &Y_hat) {
+  assert(Y.rows == Y_hat.rows && Y.cols == Y_hat.cols);
+  int n = Y.rows;
+  int d = Y.cols;
+  int N = n * d;
+
+  matrix grad(n, d);
+
+  float scale = 2.0f / static_cast<float>(N);
+
+  for (int row = 0; row < Y.rows; ++row) {
+    for (int col = 0; col < Y.cols; ++col) {
+      float diff = Y_hat(row, col) - Y(row, col);
+      grad(row, col) = scale * diff;
+    }
+  }
+
+  return grad;
 }
 
 int main() {
@@ -138,7 +184,7 @@ int main() {
 
   matrix answer = matmul(m, n);
 
-  matrix add_answer = add(m, q);
+  matrix add_answer = matadd(m, q);
 
   for (int r = 0; r < answer.rows; ++r) {
     for (int c = 0; c < answer.cols; ++c) {
