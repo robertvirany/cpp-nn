@@ -17,7 +17,7 @@ matrix matmul(const matrix &a, const matrix &b) {
 
   matrix out(a.rows, b.cols);
   for (int row = 0; row < a.rows; ++row) {
-    for (int col = 0; col < a.cols; ++col) {
+    for (int col = 0; col < b.cols; ++col) {
       float sum = 0.0f;
 
       for (int k = 0; k < a.cols; ++k) {
@@ -29,7 +29,7 @@ matrix matmul(const matrix &a, const matrix &b) {
   }
 
   return out;
-}
+};
 
 matrix add(const matrix &a, const matrix &b) {
   assert(a.rows == b.rows && a.cols == b.cols);
@@ -59,19 +59,19 @@ int main() {
   matrix n(3, 2);
   n(0, 0) = 6;
   n(0, 1) = 5;
-  n(1, 2) = 4;
-  n(1, 0) = 3;
-  n(2, 1) = 2;
-  n(2, 2) = 1;
+  n(1, 0) = 4;
+  n(1, 1) = 3;
+  n(2, 0) = 2;
+  n(2, 1) = 1;
 
-  matrix q(2,3);
+  matrix q(2, 3);
 
   q(0, 0) = 3;
   q(0, 1) = 5;
-  q(0, 2) = 7;
-  q(1, 0) = 7;
-  q(1, 1) = 10;
-  q(1, 2) = 6;
+  q(0, 0) = 7;
+  q(1, 1) = 7;
+  q(1, 0) = 10;
+  q(1, 1) = 6;
 
   for (int r = 0; r < 2; ++r) {
     for (int c = 0; c < 3; ++c) {
@@ -80,9 +80,16 @@ int main() {
     std::cout << "\n";
   }
 
+  for (int r = 0; r < 2; ++r) {
+    for (int c = 0; c < 3; ++c) {
+      std::cout << n(r, c) << " ";
+    }
+    std::cout << "\n";
+  }
+
   matrix answer = matmul(m, n);
 
-  matrix add_answer = add(m,q);
+  matrix add_answer = add(m, q);
 
   for (int r = 0; r < answer.rows; ++r) {
     for (int c = 0; c < answer.cols; ++c) {
