@@ -31,6 +31,20 @@ matrix matmul(const matrix &a, const matrix &b) {
   return out;
 }
 
+matrix add(const matrix &a, const matrix &b) {
+  assert(a.rows == b.rows && a.cols == b.cols);
+
+  matrix out(a.rows, a.cols);
+  for (int row = 0; row < a.rows; ++row) {
+    for (int col = 0; col < a.cols; ++col) {
+
+      out(row, col) = a(row, col) + b(row, col);
+    }
+  }
+
+  return out;
+};
+
 int main() {
   std::cout << "nn from scratch\n";
 
@@ -50,6 +64,15 @@ int main() {
   n(2, 1) = 2;
   n(2, 2) = 1;
 
+  matrix q(2,3);
+
+  q(0, 0) = 3;
+  q(0, 1) = 5;
+  q(0, 2) = 7;
+  q(1, 0) = 7;
+  q(1, 1) = 10;
+  q(1, 2) = 6;
+
   for (int r = 0; r < 2; ++r) {
     for (int c = 0; c < 3; ++c) {
       std::cout << m(r, c) << " ";
@@ -59,6 +82,8 @@ int main() {
 
   matrix answer = matmul(m, n);
 
+  matrix add_answer = add(m,q);
+
   for (int r = 0; r < answer.rows; ++r) {
     for (int c = 0; c < answer.cols; ++c) {
       std::cout << answer(r, c) << " ";
@@ -66,6 +91,12 @@ int main() {
     std::cout << "\n";
   }
 
+  for (int r = 0; r < add_answer.rows; ++r) {
+    for (int c = 0; c < add_answer.cols; ++c) {
+      std::cout << add_answer(r, c) << " ";
+    }
+    std::cout << "\n";
+  }
 
   return 0;
 }
