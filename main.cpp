@@ -1,5 +1,6 @@
 #include <cassert>
 #include <iostream>
+#include <vector>
 
 struct matrix {
   int rows;
@@ -45,6 +46,32 @@ matrix add(const matrix &a, const matrix &b) {
   return out;
 };
 
+matrix transpose(const matrix &a) {
+
+  matrix out(a.cols, a.rows);
+  for (int row = 0; row < a.rows; ++row) {
+    for (int col = 0; col < a.cols; ++col) {
+
+      out(col, row) = a(row, col);
+    }
+  }
+
+  return out;
+};
+
+matrix hadamard(const matrix &a, const matrix &b) {
+  assert(a.rows == b.rows && a.cols == b.cols);
+
+  matrix out(a.rows, a.cols);
+  for (int row = 0; row < a.rows; ++row) {
+    for (int col = 0; col < a.cols; ++col) {
+      out(row, col) = a(row, col) * b(row, col);
+    }
+  }
+
+  return out;
+}
+
 int main() {
   std::cout << "nn from scratch\n";
 
@@ -68,20 +95,20 @@ int main() {
 
   q(0, 0) = 3;
   q(0, 1) = 5;
-  q(0, 0) = 7;
-  q(1, 1) = 7;
-  q(1, 0) = 10;
-  q(1, 1) = 6;
+  q(0, 2) = 7;
+  q(1, 0) = 7;
+  q(1, 1) = 10;
+  q(1, 2) = 6;
 
-  for (int r = 0; r < 2; ++r) {
-    for (int c = 0; c < 3; ++c) {
+  for (int r = 0; r < m.rows; ++r) {
+    for (int c = 0; c < m.cols; ++c) {
       std::cout << m(r, c) << " ";
     }
     std::cout << "\n";
   }
 
-  for (int r = 0; r < 2; ++r) {
-    for (int c = 0; c < 3; ++c) {
+  for (int r = 0; r < n.rows; ++r) {
+    for (int c = 0; c < n.cols; ++c) {
       std::cout << n(r, c) << " ";
     }
     std::cout << "\n";
@@ -104,6 +131,8 @@ int main() {
     }
     std::cout << "\n";
   }
+
+
 
   return 0;
 }
