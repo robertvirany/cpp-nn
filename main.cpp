@@ -143,61 +143,49 @@ matrix mse_grad(const matrix &Y, const matrix &Y_hat) {
 int main() {
   std::cout << "nn from scratch\n";
 
-  matrix m(2, 3);
-  m(0, 0) = 1;
-  m(0, 1) = 2;
-  m(0, 2) = 3;
-  m(1, 0) = 4;
-  m(1, 1) = 5;
-  m(1, 2) = 6;
+  matrix X(4, 1);
+  X(0, 0) = 1;
+  X(1, 0) = 2;
+  X(2, 0) = 3;
+  X(3, 0) = 4;
 
-  matrix n(3, 2);
-  n(0, 0) = 6;
-  n(0, 1) = 5;
-  n(1, 0) = 4;
-  n(1, 1) = 3;
-  n(2, 0) = 2;
-  n(2, 1) = 1;
+  matrix Y(4, 1);
+  Y(0, 0) = 3;
+  Y(1, 0) = 5;
+  Y(2, 0) = 7;
+  Y(3, 0) = 9;
 
-  matrix q(2, 3);
+  matrix W(1, 1);
+  W(0, 0) = 0.0f;
 
-  q(0, 0) = 3;
-  q(0, 1) = 5;
-  q(0, 2) = 7;
-  q(1, 0) = 7;
-  q(1, 1) = 10;
-  q(1, 2) = 6;
-
-  for (int r = 0; r < m.rows; ++r) {
-    for (int c = 0; c < m.cols; ++c) {
-      std::cout << m(r, c) << " ";
-    }
-    std::cout << "\n";
+  matrix b(4, 1);
+  for (int i = 0; i < 4; ++i) {
+    b(i, 0) = 0.0f;
   }
 
-  for (int r = 0; r < n.rows; ++r) {
-    for (int c = 0; c < n.cols; ++c) {
-      std::cout << n(r, c) << " ";
-    }
-    std::cout << "\n";
-  }
+  float lr = 0.01f;
 
-  matrix answer = matmul(m, n);
+  for (int epoch = 0; epoch < 1000; ++epoch) {
 
-  matrix add_answer = matadd(m, q);
+    matrix Y_hat = affine(X, W, b);
 
-  for (int r = 0; r < answer.rows; ++r) {
-    for (int c = 0; c < answer.cols; ++c) {
-      std::cout << answer(r, c) << " ";
-    }
-    std::cout << "\n";
-  }
+    float loss = mean_squared_error(Y, Y_hat);
 
-  for (int r = 0; r < add_answer.rows; ++r) {
-    for (int c = 0; c < add_answer.cols; ++c) {
-      std::cout << add_answer(r, c) << " ";
-    }
-    std::cout << "\n";
+    matrix dZ = mse_grad(Y, Y_hat);
+
+    matrix X_T = transpose(X);
+    matrix dW = matmul(X_T, dZ);
+
+    // bias gradient
+    matrix db(4, 1);
+    for (int i = 0; i < 4; ++i)
+      db(i, 0) = dZ(i, 0);
+
+    W = mat_sub(W, scalar_mul(dW, lr));
+    b = mat_sub(b, scalar_mul(db, lr));
+
+    if (epoch % 100 == 0)
+      std::cout << "loss: " << loss << "\n";
   }
 
   return 0;
