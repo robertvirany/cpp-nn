@@ -140,6 +140,31 @@ matrix mse_grad(const matrix &Y, const matrix &Y_hat) {
   return grad;
 }
 
+matrix relu(const matrix &a) {
+  matrix out(a.rows, a.cols);
+
+  for (int r = 0; r < a.rows; ++r) {
+    for (int c = 0; c < a.cols; ++c) {
+      float x = a(r, c);
+      out(r, c) = x > 0.0f ? x : 0.0f;
+    }
+  }
+
+  return out;
+}
+
+matrix relu_grad(const matrix &a) {
+  matrix grad(a.rows, a.cols);
+
+  for (int r = 0; r < a.rows; ++r) {
+    for (int c = 0; c < a.cols; ++c) {
+      grad(r, c) = a(r, c) > 0.0f ? 1.0f : 0.0f;
+    }
+  }
+
+  return grad;
+}
+
 int main() {
   std::cout << "nn from scratch\n";
 
