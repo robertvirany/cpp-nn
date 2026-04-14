@@ -181,7 +181,7 @@ int main() {
   Y(3, 0) = 9;
 
   matrix W(1, 1);
-  W(0, 0) = 0.0f;
+  W(0, 0) = 0.1f;
 
   matrix b(4, 1);
   for (int i = 0; i < 4; ++i) {
@@ -192,11 +192,13 @@ int main() {
 
   for (int epoch = 0; epoch < 1000; ++epoch) {
 
-    matrix Y_hat = affine(X, W, b);
+    matrix Z = affine(X, W, b);
+    matrix Y_hat = relu(Z);
 
     float loss = mean_squared_error(Y, Y_hat);
 
-    matrix dZ = mse_grad(Y, Y_hat);
+    matrix dA = mse_grad(Y, Y_hat);
+    matrix dZ = hadamard(dA, relu_grad(Z));
 
     matrix X_T = transpose(X);
     matrix dW = matmul(X_T, dZ);
