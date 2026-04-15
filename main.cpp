@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 
@@ -96,7 +97,12 @@ matrix mat_sub(const matrix &a, const matrix &b) {
 
 matrix affine(const matrix &X, const matrix &W, const matrix &b) {
   matrix out = matmul(X, W);
-  out = matadd(out, b);
+
+  for (int r = 0; r < out.rows; ++r) {
+    for (int c = 0; c < out.cols; ++c) {
+      out(r, c) += b(0, c);
+    }
+  }
 
   return out;
 }
@@ -175,41 +181,90 @@ int main() {
   X(3, 0) = 4;
 
   matrix Y(4, 1);
-  Y(0, 0) = 3;
+  Y(0, 0) = 2;
   Y(1, 0) = 5;
-  Y(2, 0) = 7;
-  Y(3, 0) = 9;
+  Y(2, 0) = 10;
+  Y(3, 0) = 17;
 
-  matrix W(1, 1);
-  W(0, 0) = 0.1f;
+  int H = 8;
+  float lr = 0.005f;
 
-  matrix b(4, 1);
-  for (int i = 0; i < 4; ++i) {
-    b(i, 0) = 0.0f;
-  }
+  matrix W1(1, H);
+  matrix b1(1, H);
+  matrix W2(H, 1);
+  matrix b2(1, 1);
 
-  float lr = 0.01f;
+  for (int i = 0; i < 1; ++i)
+    for (int j = 0; j < H; ++j)
+      W1(i, j) = ((float)rand() / RAND_MAX - 0.5f) * 0.1f;
+
+  for (int i = 0; i < H; ++i)
+    W2(i, 0) = ((float)rand() / RAND_MAX - 0.5f) * 0.1f;
+  ;
+
+  for (int c = 0; c < H; ++c)
+    b1(0, c) = 0.1f;
+
+  b2(0, 0) = 0.0f;
+
+  // matrix b(4, 1);
+  // for (int i = 0; i < 4; ++i) {
+  //   b(i, 0) = 0.0f;
+  // }
+  //
 
   for (int epoch = 0; epoch < 1000; ++epoch) {
 
-    matrix Z = affine(X, W, b);
-    matrix Y_hat = relu(Z);
+    matrix Z1 = affine(X, W1, b1);
+    matrix A1 = relu(Z1);
+
+    matrix Z2 = affine(A1, W2, b2);
+    matrix Y_hat = Z2;
 
     float loss = mean_squared_error(Y, Y_hat);
 
-    matrix dA = mse_grad(Y, Y_hat);
-    matrix dZ = hadamard(dA, relu_grad(Z));
+    // backward
 
-    matrix X_T = transpose(X);
-    matrix dW = matmul(X_T, dZ);
+    // output
+
+    matrix dZ2 = mse_grad(Y, Y_hat);
+    // matrix dZ = hadamard(dA, relu_grad(Z));
+
+    matrix A1_T = transpose(A1);
+    matrix dW2 = matmul(A1_T, dZ2);
 
     // bias gradient
-    matrix db(4, 1);
-    for (int i = 0; i < 4; ++i)
-      db(i, 0) = dZ(i, 0);
 
-    W = mat_sub(W, scalar_mul(dW, lr));
-    b = mat_sub(b, scalar_mul(db, lr));
+    matrix db2(1, 1);
+    float sum2 = 0.0f;
+    for (int i = 0; i < 4; ++i)
+      sum2 += dZ2(i, 0);
+    db2(0, 0) = sum2;
+
+    // hidden
+
+    matrix W2_T = transpose(W2);
+    matrix dA1 = matmul(dZ2, W2_T);
+
+    matrix dZ1 = hadamard(dA1, relu_grad(Z1));
+
+    matrix X_T = transpose(X);
+    matrix dW1 = matmul(X_T, dZ1);
+
+    matrix db1(1, H);
+    for (int c = 0; c < H; ++c) {
+      float sum = 0.0f;
+      for (int r = 0; r < 4; ++r)
+        sum += dZ1(r, c);
+      db1(0, c) = sum;
+    }
+    // update
+
+    W2 = mat_sub(W2, scalar_mul(dW2, lr));
+    b2 = mat_sub(b2, scalar_mul(db2, lr));
+
+    W1 = mat_sub(W1, scalar_mul(dW1, lr));
+    b1 = mat_sub(b1, scalar_mul(db1, lr));
 
     if (epoch % 100 == 0)
       std::cout << "loss: " << loss << "\n";
