@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -146,25 +147,25 @@ matrix mse_grad(const matrix &Y, const matrix &Y_hat) {
   return grad;
 }
 
-matrix relu(const matrix &a) {
+matrix leaky_relu(const matrix &a) {
   matrix out(a.rows, a.cols);
 
   for (int r = 0; r < a.rows; ++r) {
     for (int c = 0; c < a.cols; ++c) {
       float x = a(r, c);
-      out(r, c) = x > 0.0f ? x : 0.0f;
+      out(r, c) = x > 0.0f ? x : 0.01f * x;
     }
   }
 
   return out;
 }
 
-matrix relu_grad(const matrix &a) {
+matrix leaky_relu_grad(const matrix &a) {
   matrix grad(a.rows, a.cols);
 
   for (int r = 0; r < a.rows; ++r) {
     for (int c = 0; c < a.cols; ++c) {
-      grad(r, c) = a(r, c) > 0.0f ? 1.0f : 0.0f;
+      grad(r, c) = a(r, c) > 0.0f ? 1.0f : 0.01f;
     }
   }
 
@@ -175,10 +176,10 @@ int main() {
   std::cout << "nn from scratch\n";
 
   matrix X(4, 1);
-  X(0, 0) = 1;
-  X(1, 0) = 2;
-  X(2, 0) = 3;
-  X(3, 0) = 4;
+  X(0, 0) = -2;
+  X(1, 0) = -1;
+  X(2, 0) = 1;
+  X(3, 0) = 2;
 
   matrix Y(4, 1);
   Y(0, 0) = 2;
@@ -187,36 +188,39 @@ int main() {
   Y(3, 0) = 17;
 
   int H = 8;
-  float lr = 0.005f;
+  float lr = 0.02f;
 
   matrix W1(1, H);
   matrix b1(1, H);
   matrix W2(H, 1);
   matrix b2(1, 1);
 
+  float scale1 = sqrt(2.0f / 1.0f);
   for (int i = 0; i < 1; ++i)
     for (int j = 0; j < H; ++j)
-      W1(i, j) = ((float)rand() / RAND_MAX - 0.5f) * 0.1f;
+      W1(i, j) = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * scale1;
 
+  float scale2 = sqrt(2.0f / H);
   for (int i = 0; i < H; ++i)
-    W2(i, 0) = ((float)rand() / RAND_MAX - 0.5f) * 0.1f;
+    W2(i, 0) = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * scale2;
   ;
 
   for (int c = 0; c < H; ++c)
-    b1(0, c) = 0.1f;
+    b1(0, c) = 0.0f;
 
   b2(0, 0) = 0.0f;
-
-  // matrix b(4, 1);
-  // for (int i = 0; i < 4; ++i) {
-  //   b(i, 0) = 0.0f;
-  // }
-  //
 
   for (int epoch = 0; epoch < 1000; ++epoch) {
 
     matrix Z1 = affine(X, W1, b1);
-    matrix A1 = relu(Z1);
+    int neg = 0;
+    for (int r = 0; r < Z1.rows; ++r)
+      for (int c = 0; c < Z1.cols; ++c)
+        if (Z1(r, c) < 0)
+          neg++;
+
+    // std::cout << "neg_frac: " << (float)neg / (Z1.rows * Z1.cols) << "\n";
+    matrix A1 = leaky_relu(Z1);
 
     matrix Z2 = affine(A1, W2, b2);
     matrix Y_hat = Z2;
@@ -246,7 +250,7 @@ int main() {
     matrix W2_T = transpose(W2);
     matrix dA1 = matmul(dZ2, W2_T);
 
-    matrix dZ1 = hadamard(dA1, relu_grad(Z1));
+    matrix dZ1 = hadamard(dA1, leaky_relu_grad(Z1));
 
     matrix X_T = transpose(X);
     matrix dW1 = matmul(X_T, dZ1);
@@ -258,6 +262,7 @@ int main() {
         sum += dZ1(r, c);
       db1(0, c) = sum;
     }
+
     // update
 
     W2 = mat_sub(W2, scalar_mul(dW2, lr));
@@ -268,6 +273,9 @@ int main() {
 
     if (epoch % 100 == 0)
       std::cout << "loss: " << loss << "\n";
+
+    // for (int i = 0; i < 4; ++i)
+    //   std::cout << X(i, 0) << " -> " << Y_hat(i, 0) << "\n";
   }
 
   return 0;
