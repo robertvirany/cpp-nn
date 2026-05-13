@@ -22,6 +22,8 @@ struct Tensor {
         data.resize(numel());
     };
 
+    Tensor(std::initializer_list<int> s) : Tensor(std::vector<int>(s)) {};
+
     int numel() const { return std::accumulate(
             shape.begin(),
             shape.end(),
