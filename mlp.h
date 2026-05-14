@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <random>
 
 #include "tensor.h"
 #include "tensor_math.h"
@@ -33,13 +34,44 @@ struct MLP {
     biases.push_back({1, out});
   }
 
-  Tensor forward(const Tensor& X) {
-    Tensor Y = X;
-    for (size_t i = 0; i < weights.size(); ++i) {
-      Tensor Z = affine(Y, weights[i], biases[i]);
-      Y = leaky_relu(Z);
+  void init_params() {
+    std::mt19937 rng(std::random_device{}());
+
+    for (auto& W : weights) {
+      int fan_in = W.shape[0];
+
+      std::normal_distribution<float> dist(
+        0.0f,
+        std::sqrt(2.0f / fan_in)
+      );
+
+      for (size_t i = 0; i < W.numel(); ++i) {
+        W[i] = dist(rng);
+      }
     }
-    return Y;
+
+    for (auto& b : biases) {
+      for (size_t i = 0; i < b.numel(); ++i) {
+        b[i] = 0.0f;
+      }
+    }
+  }
+
+  Tensor forward(const Tensor& X) {
+    As.clear();
+    Zs.clear();
+
+    Tensor A = X;
+    As.push_back(A);
+
+    for (size_t i = 0; i < weights.size(); ++i) {
+      Tensor Z = affine(A, weights[i], biases[i]);
+      Zs.push_back(Z);
+
+      A = leaky_relu(Z);
+      As.push_back(A);
+    }
+    return A;
   }
 
   float mse(const Tensor& X, const Tensor& Y) {
@@ -69,20 +101,38 @@ struct MLP {
   }
 
   void backward(const Tensor& Y_hat, const Tensor& Y) {
+    assert(Y_hat.shape == Y.shape);
+
+    // dL/dA for final layer
     Tensor dA = mse_grad(Y_hat, Y);
 
-    for (size_t i = weights.size() - 1; i >= 0; --i) {
+    for (int l = static_cast<int>(weights.size()) - 1; l >= 0; --l) {
 
-      // activation backward
-      Tensor dZ = dA * leaky_relu_grad(Zs[i]);
+      // current layer:
+      // Z = A_prev W + b
+      // A = leaky_relu(Z)
 
-      // parameter grads
-      d_weights[i] = matmul(transpose(As[i]), dZ);
-      d_biases[i]  = sum_rows(dZ);
+      Tensor dZ = tensor_matmul(dA, leaky_relu_grad(Zs[l]));
 
-      // propagate to previous layer
-      dA = matmul(dZ, transpose(weights[i]));
+      // gradients wrt params
+      d_weights[l] = tensor_matmul(
+        transpose(As[l]),
+        dZ
+      );
+
+      d_biases[l] = sum_rows(dZ);
+
+      // propagate backward unless first layer
+      if (l > 0) {
+        dA = tensor_matmul(
+          dZ,
+          transpose(weights[l])
+        );
+      }
     }
-    
   }
+
 };
+
+
+

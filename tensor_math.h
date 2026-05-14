@@ -67,7 +67,7 @@ inline Tensor transpose(const Tensor &a) {
 }
 
 inline Tensor tensor_matmul(const Tensor &a, const Tensor &b) {
-  assert(a.shape.size() == 2 && b.shape.size() == 2);
+  assert(a.shape.size() == 2 && b.shape.size() == 2); // 2D for now
   assert(a.shape[1] == b.shape[0]);
   Tensor out({a.shape[0], b.shape[1]});
 
@@ -100,6 +100,17 @@ inline Tensor leaky_relu(const Tensor &a) {
   for (int i = 0; i < out.data.size(); ++i) {
     float x = a[i];
     out[i] = x > 0.0f ? x : 0.01f * x;
+  }
+
+  return out;
+}
+
+inline Tensor leaky_relu_grad(const Tensor &a) {
+  Tensor out(a.shape);
+
+  for (int i = 0; i < out.data.size(); ++i) {
+    float x = a[i];
+    out[i] = x > 0.0f ? 1.0f : 0.01f;
   }
 
   return out;
