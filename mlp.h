@@ -9,6 +9,12 @@ struct MLP {
   std::vector<Tensor> weights;
   std::vector<Tensor> biases;
 
+  std::vector<Tensor> d_weights;
+  std::vector<Tensor> d_biases;
+
+  std::vector<Tensor> Zs;
+  std::vector<Tensor> As;
+
   MLP(int in, std::vector<int> hidden_sizes, int out) {
     assert(!hidden_sizes.empty());
 
@@ -30,7 +36,8 @@ struct MLP {
   Tensor forward(const Tensor& X) {
     Tensor Y = X;
     for (size_t i = 0; i < weights.size(); ++i) {
-      Y = leaky_relu(affine(Y, weights[i], biases[i]));
+      Tensor Z = affine(Y, weights[i], biases[i]);
+      Y = leaky_relu(Z);
     }
     return Y;
   }
@@ -61,7 +68,21 @@ struct MLP {
     return grad;
   }
 
-  Tensor backward(const Tensor& X) {
+  void backward(const Tensor& Y_hat, const Tensor& Y) {
+    Tensor dA = mse_grad(Y_hat, Y);
 
+    for (size_t i = weights.size() - 1; i >= 0; --i) {
+
+      // activation backward
+      Tensor dZ = dA * leaky_relu_grad(Zs[i]);
+
+      // parameter grads
+      d_weights[i] = matmul(transpose(As[i]), dZ);
+      d_biases[i]  = sum_rows(dZ);
+
+      // propagate to previous layer
+      dA = matmul(dZ, transpose(weights[i]));
+    }
+    
   }
 };
