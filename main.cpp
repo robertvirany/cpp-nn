@@ -3,25 +3,15 @@
 #include "tensor_math.h"
 #include <cstdlib>
 #include <iostream>
+#include <chrono>
 
 int main() {
-  int in = 3, hidden = 4, out = 2;
+  auto start = std::chrono::steady_clock::now();
+
+  int in = 3; std::vector<int> hidden = {3, 4, 5, 6}; int out = 2;
   MLP mlp(in, hidden, out);
 
-  // init weights
-  auto init = [](Tensor &t) {
-    for (size_t i = 0; i < t.data.size(); ++i) {
-      t[i] = ((float)rand() / RAND_MAX - 0.5f) * 0.1f;
-    }
-  };
-
-  init(mlp.W1);
-  init(mlp.W2);
-  // biases can be zero or small
-  for (size_t i = 0; i < mlp.b1.data.size(); ++i)
-    mlp.b1[i] = 0.0f;
-  for (size_t i = 0; i < mlp.b2.data.size(); ++i)
-    mlp.b2[i] = 0.0f;
+  mlp.init_params();
 
   // input: batch 5
   Tensor X({5, in});
@@ -29,22 +19,27 @@ int main() {
     X[i] = i * 0.1f;
   }
 
-  Tensor Y = mlp.forward(X);
+  Tensor target({5, out});
 
-  // print shape
-  std::cout << "Y shape: ";
-  for (int s : Y.shape)
-    std::cout << s << " ";
-  std::cout << "\n";
-
-  // print first few values
-  std::cout << "Y values: \n";
-  for (int i = 0; i < Y.shape[0]; ++i) {
-    for (int j = 0; j < Y.shape[1]; ++j) {
-      std::cout << Y({i, j}) << " ";
-    }
-    std::cout << "\n";
+  for (size_t i = 0; i < target.numel(); ++i) {
+    target[i] = 1.0f;
   }
+
+  for (int step = 0; step < 10000; ++step) {
+    Tensor Y = mlp.forward(X);
+
+    float loss = mlp.mse(Y, target);
+
+    mlp.backward(Y, target);
+    mlp.optimize(0.01f);
+
+    std::cout << step << " " << loss << "\n";
+  }
+
+  auto end = std::chrono::steady_clock::now();
+  auto elapsed = std::chrono::duration<double>(end - start);
+
+  std::cout << "wall time: " << elapsed.count() << "\n";
 
   return 0;
 }

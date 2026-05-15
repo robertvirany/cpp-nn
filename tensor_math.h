@@ -41,6 +41,23 @@ inline Tensor tensor_mul_scalar(const Tensor &a, float s) {
   return out;
 }
 
+inline Tensor sum_rows(const Tensor &a) {
+  assert(a.shape.size() == 2);
+  Tensor out({1, a.shape[1]});
+
+  for (int j = 0; j < a.shape[1]; ++j) {
+    float sum = 0.0f;
+
+    for (int i = 0; i < a.shape[0]; ++i) {
+      sum += a({i, j});
+    }
+
+    out({0, j}) = sum;
+  }
+
+  return out;
+}
+
 inline Tensor reshape(const Tensor &a, const std::vector<int> &new_shape) {
   int n = 1;
   for (int s : new_shape)

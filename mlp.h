@@ -32,6 +32,9 @@ struct MLP {
     // last hidden layer to output layer
     weights.push_back({hidden_sizes.back(), out});
     biases.push_back({1, out});
+
+    d_weights = weights;
+    d_biases = biases;
   }
 
   void init_params() {
@@ -40,7 +43,7 @@ struct MLP {
     for (auto& W : weights) {
       int fan_in = W.shape[0];
 
-      std::normal_distribution<float> dist(
+      std::normal_distribution<double> dist(
         0.0f,
         std::sqrt(2.0f / fan_in)
       );
@@ -106,15 +109,13 @@ struct MLP {
     // dL/dA for final layer
     Tensor dA = mse_grad(Y_hat, Y);
 
-    for (int l = static_cast<int>(weights.size()) - 1; l >= 0; --l) {
+    for (int l = static_cast<int>(weights.size()) - 1; l >= 0; --l) { // static_cast avoids unsigned underflow
 
-      // current layer:
-      // Z = A_prev W + b
-      // A = leaky_relu(Z)
+      // Backprop formulas derived here:
+      // https://www.youtube.com/watch?v=tXE_exIft0A&t=818s
 
-      Tensor dZ = tensor_matmul(dA, leaky_relu_grad(Zs[l]));
+      Tensor dZ = tensor_hadamard(dA, leaky_relu_grad(Zs[l]));
 
-      // gradients wrt params
       d_weights[l] = tensor_matmul(
         transpose(As[l]),
         dZ
@@ -130,7 +131,25 @@ struct MLP {
         );
       }
     }
+
   }
+
+  void optimize(float n) {
+    assert(weights.size() == d_weights.size());
+    assert(biases.size() == d_biases.size());
+
+    for (size_t l = 0; l < weights.size(); ++l) {
+
+      for (size_t i = 0; i < weights[l].numel(); ++i) {
+        weights[l][i] -= n * d_weights[l][i];
+      }
+
+      for (size_t i = 0; i < biases[l].numel(); ++i) {
+        biases[l][i] -= n * d_biases[l][i];
+      }
+    }
+  }
+
 
 };
 
